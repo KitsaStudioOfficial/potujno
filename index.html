@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ПотужноМетр v8.0 PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #111;
+            --device-bg: #1a1a1a;
+            --panel-bg: #0d0d0d;
+            --text-main: #ffffff;
+            --text-dim: #888888;
+            --led-green: #2ecc71;
+            --led-yellow: #f1c40f;
+            --led-orange: #e67e22;
+            --led-red: #ff3b30;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            outline: none;
+        }
+
+        body {
+            background-color: #000;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; font-family: 'Inter', sans-serif;
+            overflow: hidden; touch-action: none;
+        }
+
+        .wrapper { display: flex; flex-direction: column; align-items: flex-end; width: 92vw; max-width: 380px; }
+
+        .antenna-container { display: flex; flex-direction: column; align-items: center; margin-right: 40px; }
+        .antenna-tip { width: 14px; height: 14px; background: #444; border-radius: 50%; margin-bottom: -1px; border: 1px solid #000; }
+        .antenna-tip.active { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .antenna-rod { width: 6px; height: 35px; background: linear-gradient(to right, #222, #555, #222); }
+
+        .device {
+            background-color: var(--device-bg); width: 100%; padding: 35px 25px;
+            border-radius: 45px; box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+            position: relative; color: var(--text-main); z-index: 1; box-sizing: border-box;
+            border: 1px solid #333;
+        }
+
+        .screw {
+            width: 14px; height: 14px; border-radius: 50%; position: absolute;
+            background: radial-gradient(circle at 35% 35%, #777, #333);
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.9), inset -1px -1px 2px rgba(255,255,255,0.1);
+        }
+        .screw::before {
+            content: ''; position: absolute; top: 50%; left: 10%; width: 80%; height: 2px;
+            background: rgba(0,0,0,0.6); transform: translateY(-50%) rotate(45deg);
+        }
+        .tl { top: 18px; left: 18px; } .tr { top: 18px; right: 18px; }
+        .bl { bottom: 18px; left: 18px; } .br { bottom: 18px; right: 18px; }
+
+        .header {
+            background: #000; padding: 12px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px;
+            border: 1px solid #222; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .flag { width: 30px; height: 20px; background: linear-gradient(to bottom, #0057b7 50%, #ffd700 50%); border-radius: 2px; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+
+        .sub-header {
+            text-align: center; font-size: 13px; color: #666; font-weight: bold;
+            background: #0a0a0a; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222;
+        }
+
+        .scale-section {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 15px; margin-bottom: 20px;
+        }
+        .scale-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 10px; color: var(--text-dim); }
+        
+        .visual-bars {
+            display: flex; gap: 4px; background: #000; padding: 20px 10px;
+            border-radius: 10px; border: 1px solid #222; justify-content: center;
+            align-items: flex-end; height: 65px;
+        }
+        .bar { width: 8px; background: #1a1a1a; border-radius: 3px; transition: background 0.05s, height 0.2s; }
+        .bar.active-green { background: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+        .bar.active-yellow { background: var(--led-yellow); box-shadow: 0 0 8px var(--led-yellow); }
+        .bar.active-orange { background: var(--led-orange); box-shadow: 0 0 8px var(--led-orange); }
+        .bar.active-red { background: var(--led-red); box-shadow: 0 0 10px var(--led-red); }
+
+        .bottom-row { display: flex; gap: 15px; }
+        .power-display {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 15px; flex: 1.6;
+        }
+        .number-box {
+            background: #000; border: 1px solid #222; border-radius: 12px; height: 90px;
+            display: flex; justify-content: center; align-items: center; font-size: 64px; font-weight: 900; margin: 10px 0;
+            color: #fff;
+        }
+
+        .controls { display: flex; flex-direction: column; justify-content: space-between; flex: 1; align-items: center; }
+        .mode-block { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .mode-label { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; font-weight: bold; }
+
+        .btn-main {
+            background: linear-gradient(145deg, #3a3a3a, #222); border: none; color: white; 
+            width: 100%; padding: 16px 5px; border-radius: 18px; font-weight: bold; font-size: 13px; 
+            box-shadow: 0 5px 0 #000; cursor: pointer; border-top: 1px solid #555; transition: 0.1s;
+        }
+        .btn-main:active { transform: translateY(3px); box-shadow: 0 2px 0 #000; }
+
+        .btn-round {
+            background: linear-gradient(145deg, #e63946, #b91d1d); width: 70px; height: 70px; border-radius: 50%;
+            border: 4px solid #333; box-shadow: 0 6px 0 #000; cursor: pointer; transition: 0.1s;
+        }
+        .btn-round.on { 
+            background: linear-gradient(145deg, #ff4d4d, #cc0000); 
+            border-color: #ff3b30; box-shadow: 0 0 15px rgba(255,0,0,0.4), 0 2px 0 #000;
+            transform: translateY(4px);
+        }
+
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div class="wrapper">
+        <div class="antenna-container">
+            <div class="antenna-tip" id="antTip"></div>
+            <div class="antenna-rod"></div>
+        </div>
+
+        <div class="device" id="bodySensor">
+            <div class="screw tl"></div><div class="screw tr"></div>
+            <div class="screw bl"></div><div class="screw br"></div>
+
+            <div class="header">
+                <div class="flag"></div>
+                <h1>ПОТУЖНОМЕТР</h1>
+            </div>
+
+            <div class="sub-header" id="infoText">СТАТУС: ВИМКНЕНО</div>
+
+            <div class="scale-section">
+                <div class="scale-info">
+                    <span id="statusText">ОЧІКУВАННЯ</span>
+                    <span id="modeDisplay">MODE: RANDOM</span>
+                </div>
+                <div class="visual-bars" id="barContainer"></div>
+            </div>
+
+            <div class="bottom-row">
+                <div class="power-display">
+                    <div style="font-size: 10px; color: var(--text-dim); font-weight: bold;">ПОКАЗНИК (ПТЖ)</div>
+                    <div class="number-box" id="powerNum">0</div>
+                    <div style="font-size: 8px; color: #444; text-align: center;">MODEL "PEREMOGA"</div>
+                </div>
+
+                <div class="controls">
+                    <div class="mode-block">
+                        <div class="mode-label">РЕЖИМ</div>
+                        <button class="btn-main" id="modeBtn">ОБРАТИ</button>
+                    </div>
+                    <button class="btn-round" id="startBtn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const powerNum = document.getElementById('powerNum');
+    const barContainer = document.getElementById('barContainer');
+    const modeBtn = document.getElementById('modeBtn');
+    const startBtn = document.getElementById('startBtn');
+    const antTip = document.getElementById('antTip');
+    const infoText = document.getElementById('infoText');
+    const statusText = document.getElementById('statusText');
+    const modeDisplay = document.getElementById('modeDisplay');
+
+    let power = 0;
+    let mode = 'RANDOM'; 
+    let isOn = false;
+    let isHolding = false;
+    
+    // Аудіо
+    const sirenSound = new Audio('siren.mp3'); sirenSound.loop = true;
+    const alertSound = new Audio('alert.mp3'); alertSound.loop = true;
+    const tickSound = new Audio('tick.mp3');
+
+    // Режим VOL
+    let audioContext, analyser, dataArray;
+    
+    // Режим MAG
+    let magSensor = null;
+    let baseMag = null;
+
+    // Режим GYRO (Shake)
+    let lastX, lastY, lastZ;
+    let shakeThreshold = 15;
+
+    // Створення балок
+    for (let i = 0; i < 18; i++) {
+        const b = document.createElement('div');
+        b.className = 'bar';
+        b.style.height = (25 + i * 2) + 'px';
+        barContainer.appendChild(b);
+    }
+    const bars = document.querySelectorAll('.bar');
+
+    // Логіка тиків
+    function playTick() {
+        if (!isOn) return;
+        let delay = 1000 - (power * 9.7);
+        if (delay < 35) delay = 35;
+        if (power > 5) {
+            const clone = tickSound.cloneNode();
+            clone.volume = 0.5;
+            clone.play().catch(()=>{});
+        }
+        setTimeout(playTick, delay);
+    }
+
+    function updateUI() {
+        const val = Math.round(power);
+        powerNum.innerText = val;
+        const activeCount = Math.round((val / 100) * 18);
+        bars.forEach((b, i) => {
+            b.className = 'bar';
+            if (i < activeCount) {
+                if (i < 6) b.classList.add('active-green');
+                else if (i < 11) b.classList.add('active-yellow');
+                else if (i < 15) b.classList.add('active-orange');
+                else b.classList.add('active-red');
+            }
+        });
+
+        if (isOn) {
+            if (val >= 85) {
+                if (sirenSound.paused) sirenSound.play().catch(()=>{});
+                sirenSound.volume = Math.min(1, (val - 85) / 15 + 0.2);
+            } else { sirenSound.pause(); }
+            if (val >= 95) { if (alertSound.paused) alertSound.play().catch(()=>{}); }
+            else { alertSound.pause(); }
+        }
+    }
+
+    // Ініціалізація датчиків
+    async function initSensors() {
+        // Запит для iOS (Accelerometer)
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            await DeviceMotionEvent.requestPermission();
+        }
+
+        if (mode === 'VOL' && !audioContext) {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            audioContext.createMediaStreamSource(stream).connect(analyser);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        if (mode === 'MAG' && 'Magnetometer' in window) {
+            try {
+                magSensor = new Magnetometer({frequency: 10});
+                magSensor.addEventListener('reading', () => {
+                    let totalMag = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
+                    if (!baseMag) baseMag = totalMag;
+                    let diff = Math.abs(totalMag - baseMag);
+                    let target = Math.min(100, diff * 1.5);
+                    power += (target - power) * 0.2;
+                });
+                magSensor.start();
+            } catch(e) { alert("Магнітометр не підтримується браузером"); }
+        }
+
+        if (mode === 'GYRO') {
+            window.addEventListener('devicemotion', (event) => {
+                if (!isOn || mode !== 'GYRO') return;
+                let acc = event.accelerationIncludingGravity;
+                let curX = acc.x, curY = acc.y, curZ = acc.z;
+                if (lastX !== undefined) {
+                    let delta = Math.abs(curX - lastX) + Math.abs(curY - lastY) + Math.abs(curZ - lastZ);
+                    if (delta > 2) {
+                        power = Math.min(100, power + delta * 0.5);
+                    }
+                }
+                lastX = curX; lastY = curY; lastZ = curZ;
+            });
+        }
+    }
+
+    modeBtn.addEventListener('click', () => {
+        const modes = ['RANDOM', 'MANUAL', 'VOL', 'MAG', 'GYRO'];
+        mode = modes[(modes.indexOf(mode) + 1) % modes.length];
+        modeDisplay.innerText = `MODE: ${mode}`;
+        power = 0; 
+        baseMag = null;
+        updateUI();
+    });
+
+    startBtn.addEventListener('click', async () => {
+        isOn = !isOn;
+        startBtn.classList.toggle('on', isOn);
+        antTip.classList.toggle('active', isOn);
+
+        if (isOn) {
+            infoText.innerText = "СТАТУС: ПРАЦЮЄ";
+            statusText.innerText = "ВИМІРЮВАННЯ...";
+            await initSensors();
+            if (audioContext) audioContext.resume();
+            playTick();
+        } else {
+            infoText.innerText = "СТАТУС: ВИМКНЕНО";
+            statusText.innerText = "ОЧІКУВАННЯ";
+            sirenSound.pause(); alertSound.pause();
+            if (magSensor) magSensor.stop();
+            power = 0;
+            updateUI();
+        }
+    });
+
+    document.getElementById('bodySensor').addEventListener('pointerdown', () => { if(isOn && mode === 'MANUAL') isHolding = true; });
+    window.addEventListener('pointerup', () => isHolding = false);
+
+    setInterval(() => {
+        if (!isOn) return;
+        if (mode === 'RANDOM') {
+            let target = Math.random() * 100;
+            power += (target - power) * 0.1;
+        } else if (mode === 'MANUAL') {
+            power = isHolding ? Math.min(100, power + 2.5) : Math.max(0, power - 1.5);
+        } else if (mode === 'VOL' && analyser) {
+            analyser.getByteFrequencyData(dataArray);
+            let avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            let target = Math.min(100, avg * 3.5);
+            power += (target - power) * 0.2;
+        } else if (mode === 'GYRO') {
+            power = Math.max(0, power - 1.2); // Поступове затухання в режимі тряски
+        }
+        updateUI();
+    }, 50);
+</script>
+</body>
+</html>
